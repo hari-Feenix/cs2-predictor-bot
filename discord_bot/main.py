@@ -1,5 +1,9 @@
 import os
 import discord
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 from core.hltv_scraper import get_upcoming_matches
