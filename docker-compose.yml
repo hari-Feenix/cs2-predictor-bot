@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  cs2bot:
+    build: .
+    volumes:
+      - ./predictions.db:/app/predictions.db
+    env_file:
+      - .env
