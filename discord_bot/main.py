@@ -1,38 +1,40 @@
 import discord
 from discord.ext import commands, tasks
-intents = discord.Intents.default()
-intents.message_content = True  # ✅ This line is the fix
-
-bot = commands.Bot(command_prefix='!', intents=intents)
+from dotenv import load_dotenv
 import sys
 import os
+
+# Setup import path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.hltv_scraper import get_upcoming_matches
-
 from core.prediction_manager import PredictionManager
-from dotenv import load_dotenv
-import os
 
+# Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.default())
+# Enable privileged intent to read message content
+intents = discord.Intents.default()
+intents.message_content = True
+
+# Initialize bot
+bot = commands.Bot(command_prefix='!', intents=intents)
 predictions = PredictionManager()
 
 @bot.event
 async def on_ready():
-    print(f"Bot is ready: {bot.user}")
+    print(f"✅ Bot is ready: {bot.user}")
     check_results.start()
 
 @bot.command()
 async def matches(ctx):
     match_list = get_upcoming_matches()
     if not match_list:
-        await ctx.send("Couldn't fetch matches.")
+        await ctx.send("⚠️ Couldn't fetch matches.")
         return
     msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list[:5])])
-    await ctx.send(f"Upcoming Matches:\n{msg}")
+    await ctx.send(f"📅 Upcoming Matches:\n{msg}")
 
 @bot.command()
 async def predict(ctx, match_number: int, winner: str):
@@ -55,7 +57,7 @@ async def leaderboard(ctx):
 
 @tasks.loop(minutes=10)
 async def check_results():
-    # simulate results, or add real scraping from results page
+    # Simulated results (can be replaced with live scraping later)
     dummy_results = {
         '123456': 'Team A',
         '789012': 'Team B'
@@ -71,4 +73,5 @@ async def check_results():
                 await user.send(f"❌ Wrong prediction: {actual} won")
             predictions.delete_prediction(user_id, match_id)
 
+# Run bot
 bot.run(TOKEN)
