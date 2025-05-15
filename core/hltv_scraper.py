@@ -1,29 +1,38 @@
 import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_upcoming_matches():
+    api_key = os.getenv("PANDASCORE_API_KEY")
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+    url = "https://api.pandascore.co/csgo/matches/upcoming?per_page=5&sort=begin_at"
+
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
-        response = requests.get("https://hltv-api.vercel.app/api/matches", headers=headers)
-
-        if response.status_code != 200:
-            print("API responded with:", response.status_code)
-            return []
-
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
         data = response.json()
-        matches = []
 
-        for m in data[:5]:  # Take top 5 matches
+        matches = []
+        for match in data:
+            opponents = match.get("opponents", [])
+            team1 = opponents[0]["opponent"]["name"] if len(opponents) > 0 else "TBD"
+            team2 = opponents[1]["opponent"]["name"] if len(opponents) > 1 else "TBD"
+            match_time = match.get("begin_at", "Unknown")
+            match_id = match.get("id", "0")
+
             matches.append({
-                "team1": m.get("team1", "TBD"),
-                "team2": m.get("team2", "TBD"),
-                "time": m.get("time", "Unknown"),
-                "match_id": str(m.get("id", "0")),
+                "team1": team1,
+                "team2": team2,
+                "time": match_time,
+                "match_id": str(match_id)
             })
 
         return matches
 
-    except Exception as e:
-        print("Error fetching matches:", e)
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching matches: {e}")
         return []

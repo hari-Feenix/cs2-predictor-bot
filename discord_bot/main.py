@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands, tasks
+from core.hltv_scraper import get_upcoming_matches
+
 import sys
 import os
 from dotenv import load_dotenv
@@ -27,15 +29,13 @@ async def on_ready():
 
 @bot.command()
 async def matches(ctx):
-    try:
-        match_list = get_upcoming_matches()
-        if not match_list:
-            await ctx.send("⚠️ Couldn't fetch matches. API returned nothing.")
-            return
-        msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list)])
-        await ctx.send(f"📅 Upcoming Matches:\n{msg}")
-    except Exception as e:
-        await ctx.send(f"❌ Error fetching matches: {e}")
+    match_list = get_upcoming_matches()
+    if not match_list:
+        await ctx.send("⚠️ Couldn't fetch matches.")
+        return
+    msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list)])
+    await ctx.send(f"📅 Upcoming Matches:\n{msg}")
+
 
 @bot.command()
 async def predict(ctx, match_number: int, winner: str):
