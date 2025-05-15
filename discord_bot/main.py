@@ -4,38 +4,38 @@ import sys
 import os
 from dotenv import load_dotenv
 
-# Setup environment
+# Load environment
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Setup bot with message content intent
+# Setup intents and bot
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Ensure core modules can be imported
+# Allow imports from core/
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from core.hltv_scraper import get_upcoming_matches
 from core.prediction_manager import PredictionManager
 
-# Prediction manager instance
 predictions = PredictionManager()
 
 @bot.event
 async def on_ready():
-    print(f"Bot is ready: {bot.user}")
+    print(f"✅ Bot is ready: {bot.user}")
     check_results.start()
 
 @bot.command()
 async def matches(ctx):
-    match_list = get_upcoming_matches()
-    print("Fetched:", match_list)  # Add this line for debugging
-    if not match_list:
-        await ctx.send("⚠️ Couldn't fetch matches.")
-        return
-    msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list[:5])])
-    await ctx.send(f"📅 Upcoming Matches:\n{msg}")
+    try:
+        match_list = get_upcoming_matches()
+        if not match_list:
+            await ctx.send("⚠️ Couldn't fetch matches. API returned nothing.")
+            return
+        msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list)])
+        await ctx.send(f"📅 Upcoming Matches:\n{msg}")
+    except Exception as e:
+        await ctx.send(f"❌ Error fetching matches: {e}")
 
 @bot.command()
 async def predict(ctx, match_number: int, winner: str):
@@ -51,14 +51,13 @@ async def predict(ctx, match_number: int, winner: str):
 async def leaderboard(ctx):
     leaders = predictions.get_leaderboard()
     if not leaders:
-        await ctx.send("No leaderboard data yet.")
+        await ctx.send("📉 No leaderboard data yet.")
         return
     msg = "\n".join([f"<@{uid}> - {score} pts" for uid, score in leaders])
     await ctx.send(f"🏆 Leaderboard:\n{msg}")
 
 @tasks.loop(minutes=10)
 async def check_results():
-    # Dummy placeholder until real results are implemented
     dummy_results = {
         '123456': 'Team A',
         '789012': 'Team B'

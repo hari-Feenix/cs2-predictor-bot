@@ -2,7 +2,11 @@ import requests
 
 def get_upcoming_matches():
     try:
-        response = requests.get("https://hltv-api.vercel.app/api/matches")
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+        response = requests.get("https://hltv-api.vercel.app/api/matches", headers=headers)
+
         if response.status_code != 200:
             print("API responded with:", response.status_code)
             return []
@@ -10,12 +14,12 @@ def get_upcoming_matches():
         data = response.json()
         matches = []
 
-        for m in data[:5]:
+        for m in data[:5]:  # Take top 5 matches
             matches.append({
                 "team1": m.get("team1", "TBD"),
                 "team2": m.get("team2", "TBD"),
                 "time": m.get("time", "Unknown"),
-                "match_id": str(m.get("id", "0"))
+                "match_id": str(m.get("id", "0")),
             })
 
         return matches
