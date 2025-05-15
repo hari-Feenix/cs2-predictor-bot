@@ -1,10 +1,10 @@
 import requests
-from bs4 import BeautifulSoup
 
 def get_upcoming_matches():
     try:
         response = requests.get("https://hltv-api.vercel.app/api/matches")
         if response.status_code != 200:
+            print("API responded with:", response.status_code)
             return []
 
         data = response.json()

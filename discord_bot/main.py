@@ -30,6 +30,7 @@ async def on_ready():
 @bot.command()
 async def matches(ctx):
     match_list = get_upcoming_matches()
+    print("Fetched:", match_list)  # Add this line for debugging
     if not match_list:
         await ctx.send("⚠️ Couldn't fetch matches.")
         return
