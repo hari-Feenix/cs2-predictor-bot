@@ -1,5 +1,9 @@
 import discord
 from discord.ext import commands, tasks
+intents = discord.Intents.default()
+intents.message_content = True  # ✅ This line is the fix
+
+bot = commands.Bot(command_prefix='!', intents=intents)
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
