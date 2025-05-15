@@ -2,41 +2,24 @@ import requests
 from bs4 import BeautifulSoup
 
 def get_upcoming_matches():
-    url = "https://www.hltv.org/matches"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get("https://hltv-api.vercel.app/api/matches")
         if response.status_code != 200:
-            print(f"[ERROR] Failed to fetch matches. Status code: {response.status_code}")
             return []
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        data = response.json()
         matches = []
 
-        for match in soup.select("a.a-reset"):
-            try:
-                team1 = match.select_one(".matchTeam.team1 .matchTeamName").text.strip()
-                team2 = match.select_one(".matchTeam.team2 .matchTeamName").text.strip()
-                time = match.select_one(".matchTime").text.strip()
-                match_id = match["href"].split("/")[-2]
-
-                matches.append({
-                    "team1": team1,
-                    "team2": team2,
-                    "time": time,
-                    "match_id": match_id
-                })
-
-                if len(matches) >= 5:
-                    break
-            except Exception as e:
-                continue
+        for m in data[:5]:
+            matches.append({
+                "team1": m.get("team1", "TBD"),
+                "team2": m.get("team2", "TBD"),
+                "time": m.get("time", "Unknown"),
+                "match_id": str(m.get("id", "0"))
+            })
 
         return matches
 
     except Exception as e:
-        print(f"[ERROR] Exception while scraping matches: {e}")
+        print("Error fetching matches:", e)
         return []
