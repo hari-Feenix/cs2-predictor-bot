@@ -1,30 +1,30 @@
 import discord
 from discord.ext import commands, tasks
-from dotenv import load_dotenv
 import sys
 import os
+from dotenv import load_dotenv
 
-# Setup import path
+# Setup environment
+load_dotenv()
+TOKEN = os.getenv("DISCORD_TOKEN")
+
+# Setup bot with message content intent
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# Ensure core modules can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.hltv_scraper import get_upcoming_matches
 from core.prediction_manager import PredictionManager
 
-# Load environment variables
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
-
-# Enable privileged intent to read message content
-intents = discord.Intents.default()
-intents.message_content = True
-
-# Initialize bot
-bot = commands.Bot(command_prefix='!', intents=intents)
+# Prediction manager instance
 predictions = PredictionManager()
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot is ready: {bot.user}")
+    print(f"Bot is ready: {bot.user}")
     check_results.start()
 
 @bot.command()
@@ -57,7 +57,7 @@ async def leaderboard(ctx):
 
 @tasks.loop(minutes=10)
 async def check_results():
-    # Simulated results (can be replaced with live scraping later)
+    # Dummy placeholder until real results are implemented
     dummy_results = {
         '123456': 'Team A',
         '789012': 'Team B'
@@ -73,5 +73,4 @@ async def check_results():
                 await user.send(f"❌ Wrong prediction: {actual} won")
             predictions.delete_prediction(user_id, match_id)
 
-# Run bot
 bot.run(TOKEN)
