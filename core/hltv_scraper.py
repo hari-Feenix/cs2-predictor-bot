@@ -1,3 +1,6 @@
+import requests
+from bs4 import BeautifulSoup
+
 def get_upcoming_matches():
     url = 'https://www.hltv.org/matches'
     response = requests.get(url)
