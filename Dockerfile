@@ -1,18 +1,17 @@
 # Use official Python image
 FROM python:3.11-slim
 
-# Set the working directory
 WORKDIR /app
 
-# Install Python dependencies first
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ✅ Copy everything in the repo (core/, discord_bot/, etc.)
+# ✅ Copy the whole project
 COPY . .
 
-# Set working directory to bot folder
+# ✅ Set PYTHONPATH so Python can locate core/
+ENV PYTHONPATH="${PYTHONPATH}:/app"
+
 WORKDIR /app/discord_bot
 
-# Run the bot
 CMD ["python", "main.py"]
