@@ -1,6 +1,11 @@
 import discord
 from discord.ext import commands, tasks
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from core.hltv_scraper import get_upcoming_matches
+
 from core.prediction_manager import PredictionManager
 from dotenv import load_dotenv
 import os
