@@ -3,19 +3,24 @@ from bs4 import BeautifulSoup
 
 def get_upcoming_matches():
     url = 'https://www.hltv.org/matches'
-    response = requests.get(url)
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
     matches = []
-    print("[DEBUG] Scraping HLTV matches...")
-
-    for match in soup.select('.match-day .match'):
+    for match in soup.select('.upcomingMatches .match'):
         try:
-            print("[DEBUG] Match raw HTML:", match.prettify())  # NEW LINE
-            team1 = match.select_one('.team1 .team').text.strip()
-            team2 = match.select_one('.team2 .team').text.strip()
-            time = match.select_one('.matchTime').text.strip()
-            match_id = match['href'].split('/')[-2]
+            team1 = match.select_one('.matchTeam.team1 .matchTeamName').text.strip()
+            team2 = match.select_one('.matchTeam.team2 .matchTeamName').text.strip()
+            time_element = match.select_one('.matchTime')
+            time = time_element['data-unix'] if time_element else 'Unknown'
+            link = match.select_one('a.a-reset')
+            href = link['href'] if link else ''
+            match_id = href.split('/')[2] if href else '0'
+
             matches.append({
                 'team1': team1,
                 'team2': team2,
@@ -23,8 +28,6 @@ def get_upcoming_matches():
                 'match_id': match_id
             })
         except Exception as e:
-            print("[ERROR]", e)
             continue
 
-    print("[DEBUG] Total matches scraped:", len(matches))
     return matches
