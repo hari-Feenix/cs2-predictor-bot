@@ -58,19 +58,38 @@ async def leaderboard(ctx):
 
 @tasks.loop(minutes=10)
 async def check_results():
-    dummy_results = {
-        '123456': 'Team A',
-        '789012': 'Team B'
+    print("🔍 Checking results from Pandascore...")
+
+    headers = {
+        "Authorization": f"Bearer {os.getenv('PANDASCORE_API_KEY')}"
     }
+
     for user_id, match_id, predicted in predictions.get_predictions():
-        if match_id in dummy_results:
-            actual = dummy_results[match_id]
+        try:
+            url = f"https://api.pandascore.co/csgo/matches/{match_id}"
+            response = requests.get(url, headers=headers)
+            if response.status_code != 200:
+                print(f"Failed to fetch result for match {match_id}")
+                continue
+
+            data = response.json()
+
+            # Only check completed matches
+            if data["status"] != "finished" or not data.get("winner"):
+                continue
+
+            actual_winner = data["winner"]["name"]
             user = await bot.fetch_user(int(user_id))
-            if predicted == actual:
+
+            if predicted.lower() == actual_winner.lower():
                 predictions.increment_score(user_id)
-                await user.send(f"✅ Correct prediction: {actual}")
+                await user.send(f"✅ Correct prediction! {actual_winner} won match ID {match_id}. 🎯")
             else:
-                await user.send(f"❌ Wrong prediction: {actual} won")
+                await user.send(f"❌ Wrong prediction! Actual winner was {actual_winner}.")
+
             predictions.delete_prediction(user_id, match_id)
+
+        except Exception as e:
+            print(f"Error processing result for match {match_id}: {e}")
 
 bot.run(TOKEN)
