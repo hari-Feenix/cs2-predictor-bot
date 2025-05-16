@@ -2,14 +2,20 @@ import requests
 import os
 from dotenv import load_dotenv
 
+# Load environment variables (needed for local testing or .env in Render)
 load_dotenv()
 
 def get_upcoming_matches():
     api_key = os.getenv("PANDASCORE_API_KEY")
+    if not api_key:
+        print("❌ PANDASCORE_API_KEY is missing in environment.")
+        return []
+
     headers = {
         "Authorization": f"Bearer {api_key}"
     }
-    url = "https://api.pandascore.co/csgo/matches/upcoming?per_page=5&sort=begin_at"
+
+    url = "https://api.pandascore.co/cs2/matches/upcoming?per_page=5&sort=begin_at"
 
     try:
         response = requests.get(url, headers=headers)
@@ -34,5 +40,5 @@ def get_upcoming_matches():
         return matches
 
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching matches: {e}")
+        print(f"❌ Error fetching matches: {e}")
         return []
