@@ -56,7 +56,13 @@ async def leaderboard(ctx):
     msg = "\n".join([f"<@{uid}> - {score} pts" for uid, score in leaders])
     await ctx.send(f"🏆 Leaderboard:\n{msg}")
 
-@tasks.loop(minutes=10)
+@bot.command()
+async def checknow(ctx):
+    await ctx.send("🔄 Results check triggered manually.")
+    await check_results()
+
+
+@tasks.loop(minutes=1)
 async def check_results():
     dummy_results = {
         '123456': 'Team A',
