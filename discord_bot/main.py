@@ -1,30 +1,26 @@
 import discord
 from discord.ext import commands, tasks
-import os
-import sys
-from dotenv import load_dotenv
-
-# Allow access to core module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from core.hltv_scraper import get_upcoming_matches, fetch_recent_results
+from core.hltv_scraper import get_upcoming_matches
 from core.prediction_manager import PredictionManager
+
+import os
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Discord bot setup
+# Setup Discord bot
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Prediction tracking
+# Manage predictions
 predictions = PredictionManager()
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot is online as {bot.user}")
+    print(f"✅ Bot is online: {bot.user}")
     check_results.start()
 
 @bot.command()
@@ -33,12 +29,8 @@ async def matches(ctx):
     if not match_list:
         await ctx.send("⚠️ Couldn't fetch matches.")
         return
-
-    msg = "\n".join([
-        f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}"
-        for i, m in enumerate(match_list)
-    ])
-    await ctx.send(f"📅 Upcoming Matches:\n{msg}")
+    msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list)])
+    await ctx.send(f"📅 **Upcoming Matches:**\n{msg}")
 
 @bot.command()
 async def predict(ctx, match_number: int, winner: str):
@@ -56,35 +48,32 @@ async def leaderboard(ctx):
     if not leaders:
         await ctx.send("📉 No leaderboard data yet.")
         return
-
     msg = "\n".join([f"<@{uid}> - {score} pts" for uid, score in leaders])
-    await ctx.send(f"🏆 Leaderboard:\n{msg}")
+    await ctx.send(f"🏆 **Leaderboard:**\n{msg}")
 
 @bot.command()
 async def checknow(ctx):
     await ctx.send("🔄 Results check triggered manually.")
-    await process_results()
+    await check_results_function()
 
 @tasks.loop(minutes=10)
 async def check_results():
-    await process_results()
+    await check_results_function()
 
-async def process_results():
-    results = fetch_recent_results()
-    if not results:
-        return
-
+async def check_results_function():
+    dummy_results = {
+        # Placeholder logic: replace with real fetch logic later
+        'NAVI_vs_Vitality_1715880000': 'NAVI'
+    }
     for user_id, match_id, predicted in predictions.get_predictions():
-        if match_id in results:
-            actual_winner = results[match_id]['winner']
+        if match_id in dummy_results:
+            actual = dummy_results[match_id]
             user = await bot.fetch_user(int(user_id))
-
-            if predicted.lower() == actual_winner.lower():
+            if predicted.lower() == actual.lower():
                 predictions.increment_score(user_id)
-                await user.send(f"✅ Correct prediction! {actual_winner} won.")
+                await user.send(f"✅ Correct prediction: {actual}")
             else:
-                await user.send(f"❌ Wrong prediction. {actual_winner} won.")
+                await user.send(f"❌ Wrong prediction: {actual} won")
             predictions.delete_prediction(user_id, match_id)
 
-# Run the bot
 bot.run(TOKEN)
