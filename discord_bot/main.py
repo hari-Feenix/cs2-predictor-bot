@@ -56,6 +56,25 @@ async def checknow(ctx):
     await ctx.send("🔄 Results check triggered manually.")
     await check_results_function()
 
+@bot.command()
+async def results(ctx):
+    from core.hltv_scraper import get_recent_results
+    await ctx.send("📊 Fetching recent results...")
+
+    try:
+        results = get_recent_results()
+        if not results:
+            await ctx.send("⚠️ No recent results found.")
+            return
+
+        msg = "\n".join([f"{r['team1']} {r['score1']} - {r['score2']} {r['team2']}" for r in results])
+        await ctx.send(f"📈 Recent Match Results:\n{msg}")
+
+    except Exception as e:
+        await ctx.send("❌ Error while fetching results.")
+        print(f"[ERROR] Results command failed: {e}")
+
+
 @tasks.loop(minutes=10)
 async def check_results():
     await check_results_function()
