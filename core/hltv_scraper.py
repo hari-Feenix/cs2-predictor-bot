@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 def get_recent_results():
-    url = "https://www.hltv.org/results"
+    url = "https://bo3.gg/matches/finished"
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, "html.parser")
 
@@ -27,7 +27,7 @@ def get_recent_results():
 
 
 def get_upcoming_matches():
-    url = "https://www.hltv.org/matches"
+    url = "https://bo3.gg/matches/current"
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
