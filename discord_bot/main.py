@@ -1,30 +1,28 @@
 import discord
 from discord.ext import commands, tasks
-from core.hltv_scraper import get_upcoming_matches
-
-import sys
-import os
 from dotenv import load_dotenv
+import os
+import sys
 
-# Load environment
+# Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Setup intents and bot
+# Set up Discord bot with intents
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Allow imports from core/
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from core.hltv_scraper import get_upcoming_matches
-from core.prediction_manager import PredictionManager
+# Import custom modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'core')))
+from hltv_scraper import get_upcoming_matches, fetch_recent_results
+from prediction_manager import PredictionManager
 
 predictions = PredictionManager()
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot is ready: {bot.user}")
+    print(f"✅ Bot is online as {bot.user}")
     check_results.start()
 
 @bot.command()
@@ -35,7 +33,6 @@ async def matches(ctx):
         return
     msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list)])
     await ctx.send(f"📅 Upcoming Matches:\n{msg}")
-
 
 @bot.command()
 async def predict(ctx, match_number: int, winner: str):
@@ -57,26 +54,27 @@ async def leaderboard(ctx):
     await ctx.send(f"🏆 Leaderboard:\n{msg}")
 
 @bot.command()
-async def checknow(ctx):
-    await ctx.send("🔄 Results check triggered manually.")
-    await check_results()
+async def check(ctx):
+    await ctx.send("🔄 Checking for match results...")
+    await update_results()
 
-
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=10)
 async def check_results():
-    dummy_results = {
-        '123456': 'Team A',
-        '789012': 'Team B'
-    }
+    await update_results()
+
+async def update_results():
+    results = fetch_recent_results()
     for user_id, match_id, predicted in predictions.get_predictions():
-        if match_id in dummy_results:
-            actual = dummy_results[match_id]
-            user = await bot.fetch_user(int(user_id))
-            if predicted == actual:
-                predictions.increment_score(user_id)
-                await user.send(f"✅ Correct prediction: {actual}")
-            else:
-                await user.send(f"❌ Wrong prediction: {actual} won")
-            predictions.delete_prediction(user_id, match_id)
+        for match in results:
+            if str(match_id) == str(match['match_id']):
+                actual = match['winner']
+                user = await bot.fetch_user(int(user_id))
+                if predicted.lower() == actual.lower():
+                    predictions.increment_score(user_id)
+                    await user.send(f"✅ Correct prediction: {actual}")
+                else:
+                    await user.send(f"❌ Wrong prediction: {actual} won")
+                predictions.delete_prediction(user_id, match_id)
+                break
 
 bot.run(TOKEN)
