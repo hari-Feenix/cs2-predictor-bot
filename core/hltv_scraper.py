@@ -2,6 +2,30 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+def get_recent_results():
+    url = "https://www.hltv.org/results"
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    results = []
+    for match in soup.select(".result-con"):
+        team_names = match.select(".team")
+        if len(team_names) < 2:
+            continue
+
+        score = match.select_one(".result-score")
+        results.append({
+            "team1": team_names[0].text.strip(),
+            "team2": team_names[1].text.strip(),
+            "score": score.text.strip() if score else "N/A"
+        })
+
+        if len(results) >= 5:
+            break
+
+    return results
+
+
 def get_upcoming_matches():
     url = "https://www.hltv.org/matches"
     headers = {

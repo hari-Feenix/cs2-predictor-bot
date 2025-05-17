@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands, tasks
 from core.hltv_scraper import get_upcoming_matches
 from core.prediction_manager import PredictionManager
+from core.hltv_scraper import get_upcoming_matches, get_recent_results
+
 
 import os
 from dotenv import load_dotenv
