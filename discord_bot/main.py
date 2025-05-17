@@ -15,7 +15,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Import custom modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'core')))
-from hltv_scraper import get_upcoming_matches, fetch_recent_results
+from core.hltv_scraper import get_upcoming_matches, fetch_recent_results
 from prediction_manager import PredictionManager
 
 predictions = PredictionManager()
