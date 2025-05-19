@@ -1,40 +1,38 @@
-import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 from datetime import datetime
 
 def get_recent_hltv_results():
     url = 'https://www.hltv.org/results'
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    scraper = cloudscraper.create_scraper()
+    response = scraper.get(url)
 
+    if response.status_code != 200:
+        print(f"⚠️ Failed to fetch HLTV data: {response.status_code}")
+        return []
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    matches = soup.select('.result-con')
     results = []
 
-    for match in soup.select('.result-con'):
-        teams = match.select('.team')
-        score = match.select_one('.result-score')
-        time_tag = match.select_one('.time')
-        link_tag = match.select_one('a.a-reset')
-
-        if len(teams) < 2 or not score or not link_tag:
-            continue
-
-        team1 = teams[0].get_text(strip=True)
-        team2 = teams[1].get_text(strip=True)
-        score_text = score.get_text(strip=True)
-        match_link = 'https://www.hltv.org' + link_tag['href']
-
+    for match in matches[:10]:  # Limit to 10 recent results
         try:
-            timestamp = datetime.fromtimestamp(int(time_tag['data-unix']) / 1000)
-        except Exception:
+            team1 = match.select_one('.team1 .team').text.strip()
+            team2 = match.select_one('.team2 .team').text.strip()
+            score = match.select_one('.result-score').text.strip()
+            time_tag = match.select_one('.time')
             timestamp = datetime.utcnow()
+            if time_tag and time_tag.has_attr('data-unix'):
+                timestamp = datetime.fromtimestamp(int(time_tag['data-unix']) / 1000)
 
-        results.append({
-            'team1': team1,
-            'team2': team2,
-            'score': score_text,
-            'match_link': match_link,
-            'timestamp': timestamp,
-        })
+            results.append({
+                'team1': team1,
+                'team2': team2,
+                'score': score,
+                'timestamp': timestamp
+            })
+        except Exception as e:
+            print("⚠️ Error parsing match:", e)
+            continue
 
     return results
