@@ -1,28 +1,30 @@
 import discord
 from discord.ext import commands, tasks
 from core.hltv_scraper import get_upcoming_matches
-from core.prediction_manager import PredictionManager
-from core.hltv_scraper import get_upcoming_matches, get_recent_results
 
-
+import sys
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Setup Discord bot
+# Setup intents and bot
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Manage predictions
+# Allow imports from core/
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from core.hltv_scraper import get_upcoming_matches
+from core.prediction_manager import PredictionManager
+
 predictions = PredictionManager()
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot is online: {bot.user}")
+    print(f"✅ Bot is ready: {bot.user}")
     check_results.start()
 
 @bot.command()
@@ -32,7 +34,8 @@ async def matches(ctx):
         await ctx.send("⚠️ Couldn't fetch matches.")
         return
     msg = "\n".join([f"{i+1}. {m['team1']} vs {m['team2']} at {m['time']}" for i, m in enumerate(match_list)])
-    await ctx.send(f"📅 **Upcoming Matches:**\n{msg}")
+    await ctx.send(f"📅 Upcoming Matches:\n{msg}")
+
 
 @bot.command()
 async def predict(ctx, match_number: int, winner: str):
@@ -51,46 +54,19 @@ async def leaderboard(ctx):
         await ctx.send("📉 No leaderboard data yet.")
         return
     msg = "\n".join([f"<@{uid}> - {score} pts" for uid, score in leaders])
-    await ctx.send(f"🏆 **Leaderboard:**\n{msg}")
-
-@bot.command()
-async def checknow(ctx):
-    await ctx.send("🔄 Results check triggered manually.")
-    await check_results_function()
-
-@bot.command()
-async def results(ctx):
-    from core.hltv_scraper import get_recent_results
-    await ctx.send("📊 Fetching recent results...")
-
-    try:
-        results = get_recent_results()
-        if not results:
-            await ctx.send("⚠️ No recent results found.")
-            return
-
-        msg = "\n".join([f"{r['team1']} {r['score1']} - {r['score2']} {r['team2']}" for r in results])
-        await ctx.send(f"📈 Recent Match Results:\n{msg}")
-
-    except Exception as e:
-        await ctx.send("❌ Error while fetching results.")
-        print(f"[ERROR] Results command failed: {e}")
-
+    await ctx.send(f"🏆 Leaderboard:\n{msg}")
 
 @tasks.loop(minutes=10)
 async def check_results():
-    await check_results_function()
-
-async def check_results_function():
     dummy_results = {
-        # Placeholder logic: replace with real fetch logic later
-        'NAVI_vs_Vitality_1715880000': 'NAVI'
+        '123456': 'Team A',
+        '789012': 'Team B'
     }
     for user_id, match_id, predicted in predictions.get_predictions():
         if match_id in dummy_results:
             actual = dummy_results[match_id]
             user = await bot.fetch_user(int(user_id))
-            if predicted.lower() == actual.lower():
+            if predicted == actual:
                 predictions.increment_score(user_id)
                 await user.send(f"✅ Correct prediction: {actual}")
             else:
