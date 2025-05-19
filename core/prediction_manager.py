@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 class PredictionManager:
     def __init__(self, db_path='predictions.db'):
@@ -8,7 +9,10 @@ class PredictionManager:
             CREATE TABLE IF NOT EXISTS predictions (
                 user_id TEXT,
                 match_id TEXT,
-                predicted_winner TEXT
+                predicted_winner TEXT,
+                team1 TEXT,
+                team2 TEXT,
+                match_time TEXT
             )
         ''')
         self.cursor.execute('''
@@ -19,12 +23,31 @@ class PredictionManager:
         ''')
         self.conn.commit()
 
-    def add_prediction(self, user_id, match_id, predicted_winner):
-        self.cursor.execute("INSERT INTO predictions VALUES (?, ?, ?)", (user_id, match_id, predicted_winner))
+    def add_prediction(self, user_id, match_id, predicted_winner, match_info):
+        team1 = match_info.get('team1', '')
+        team2 = match_info.get('team2', '')
+        match_time = match_info.get('time', '')
+        self.cursor.execute(
+            "INSERT INTO predictions VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, match_id, predicted_winner, team1, team2, match_time)
+        )
         self.conn.commit()
 
     def get_predictions(self):
-        return self.cursor.execute("SELECT * FROM predictions").fetchall()
+        return self.cursor.execute("SELECT user_id, match_id, predicted_winner FROM predictions").fetchall()
+
+    def get_match_info(self, match_id):
+        row = self.cursor.execute(
+            "SELECT team1, team2, match_time FROM predictions WHERE match_id=? LIMIT 1", (match_id,)
+        ).fetchone()
+        if row:
+            team1, team2, match_time = row
+            try:
+                match_time = datetime.fromisoformat(match_time.replace('Z', '+00:00'))
+            except:
+                match_time = None
+            return {"team1": team1, "team2": team2, "time": match_time}
+        return {}
 
     def delete_prediction(self, user_id, match_id):
         self.cursor.execute("DELETE FROM predictions WHERE user_id=? AND match_id=?", (user_id, match_id))
