@@ -1,43 +1,38 @@
 import requests
-from bs4 import BeautifulSoup
-import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_upcoming_matches():
-    url = "https://bo3.gg/matches"
+    api_key = os.getenv("PANDASCORE_API_KEY")
     headers = {
-        "User-Agent": "Mozilla/5.0"
+        "Authorization": f"Bearer {api_key}"
     }
+    url = "https://api.pandascore.co/csgo/matches/upcoming?per_page=5&sort=begin_at"
 
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Find JSON-LD script tag
-        script_tag = soup.find('script', type='application/ld+json')
-        if not script_tag:
-            print("⚠️ Couldn't find match data.")
-            return []
-
-        raw_json = json.loads(script_tag.string)
+        data = response.json()
 
         matches = []
-        for match in raw_json:
-            if 'name' in match and 'startDate' in match:
-                try:
-                    team1, team2 = match['name'].split(' vs ')
-                except ValueError:
-                    continue
+        for match in data:
+            opponents = match.get("opponents", [])
+            team1 = opponents[0]["opponent"]["name"] if len(opponents) > 0 else "TBD"
+            team2 = opponents[1]["opponent"]["name"] if len(opponents) > 1 else "TBD"
+            match_time = match.get("begin_at", "Unknown")
+            match_id = match.get("id", "0")
 
-                matches.append({
-                    "team1": team1.strip(),
-                    "team2": team2.strip(),
-                    "time": match['startDate'],
-                    "match_id": f"{team1.strip()}_vs_{team2.strip()}"
-                })
+            matches.append({
+                "team1": team1,
+                "team2": team2,
+                "time": match_time,
+                "match_id": str(match_id)
+            })
 
         return matches
 
-    except Exception as e:
-        print(f"Error fetching matches from bo3.gg: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching matches: {e}")
         return []
